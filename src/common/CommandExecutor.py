@@ -106,7 +106,7 @@ class           CommandExecutor :
             self.proc.send_signal( SIGCONT )
 
     # マイニングコマンド終了
-    def             terminate( self, timeout : int or None = 5000 ) -> None :
+    def             terminate( self, timeout : int or None = None ) -> None :
         """
         コマンド終了
         

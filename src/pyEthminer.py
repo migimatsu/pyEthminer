@@ -13,7 +13,7 @@ from            common.Props                import      Props
 from            Layout                      import      window
 from            Miner                       import      Miner
 
-# パスワードジェネレータ主処理
+# Ethminer 実行 - 主処理
 def         pyEthminer( title : str ) -> None :
     """
     パスワードジェネレータ主処理
@@ -24,7 +24,7 @@ def         pyEthminer( title : str ) -> None :
     """
 
     # ロガー
-    log         = Log( __name__ )
+    log             = Log( __name__ )
 
     # 主画面のレイアウトにより window を生成する
     screen          = 'main'
@@ -37,7 +37,7 @@ def         pyEthminer( title : str ) -> None :
     while True :
 
         # 画面からのイベントをポーリングし、発生したイベントとフォーム (入力データの辞書) を得る
-        event, values       = win.read( timeout = 100, timeout_key = '_', )
+        event, values   = win.read( timeout = 100, timeout_key = '_', )
         
         # DEBUG : タイムアウト以外のイベントをトレース
         if not event == '_' :
@@ -45,20 +45,19 @@ def         pyEthminer( title : str ) -> None :
 
         # イベント毎の処理を行う
         try :
-
+    
             # イベントに応じたアクションを実行し、画面を更新するための結果を得る
-            result          = miner.do( screen, event, values )
+            result       = miner.do( screen, event, values )
 
-            # DEBUG : タイムアウト以外の結果をトレース
-            if not result == {} :
-                log.debug( '結果データ : ' + str( result ) )
-
-            # 更新がなければ次の受信へ
+            # 更新がなければ次のポーリングへ
             if result == {} :
                 continue
 
-            # None が返って来た時は終了する
-            elif result is None :
+            # DEBUG : タイムアウト以外の結果をトレース
+            log.debug( '結果データ : ' + str( result ) )
+            
+            # event が None ならウィンドウを閉じる
+            if result is None :
                 break
 
             # 返ってきた結果で画面を更新する
@@ -72,10 +71,10 @@ def         pyEthminer( title : str ) -> None :
     win.close()
     
     
-# GUI 画面の更新処理
+# 画面の更新処理
 def             update( win : S.Window, result : dict ) -> None :
     """
-    GUI 画面の更新を行う
+    画面の更新を行う
     パスワードジェネレータ主処理
 
     ethminer コマンドを利用してマイニングを実行します

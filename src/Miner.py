@@ -21,19 +21,19 @@ class           Miner :
     """
 
     # コマンド実行インスタンス
-    _miner : CommandExecutor or None                = None
+    _miner : CommandExecutor or None    = None
 
     # コマンドとオプション引数
-    _cmd : str                                      = ''
+    _cmd : str                          = ''
     
     # オプション引数
-    _opts : list[ str ]                             = []
+    _opts : list[ str ]                 = []
     
     # 接続先プール
-    _pool : str                                     = ''
+    _pool : str                         = ''
     
     # コマンド停止スレッド
-    _stopper : threading.Thread or None             = None
+    _stopper : threading.Thread or None = None
 
     # コンストラクタ
     def             __init__( self, ) :
@@ -49,9 +49,9 @@ class           Miner :
         
         # 接続先プール
         self._pool      = (
-            Props.props( 'POOL', 'PROTOCOL' ) +
-            '://' + Props.props( 'POOL', 'USER' ) + '.' + Props.props( 'POOL', 'WORKER' ) +
-            '@' + Props.props( 'POOL', 'HOST' )
+            Props.props( 'POOL', 'PROTOCOL' )
+                + '://' + Props.props( 'POOL', 'USER' ) + '.' + Props.props( 'POOL', 'WORKER' )
+                + '@' + Props.props( 'POOL', 'HOST' )
         )
 
         # オプション引数
@@ -110,12 +110,12 @@ class           Miner :
         # main・stop - マイニングコマンドを停止する
         elif screen == 'main' and event == 'stop' :
             result          = self.stop()
-            
-        # main・close - window close または 閉じる ボタンを押下した時は終了する
-        elif not event or event == 'close' :
-            self.close()
-            result          = None
 
+        # main・close - ウィンドウを終了する
+        elif ( screen == 'main' and event == 'close' ) or event is None :
+            self.stop()
+            return None
+            
         # 対応するアクションがなければメッセージを出す
         else :
             result[ 'msg' ] = '!!! 画面 {} イベント {} が定義されていません'.format( screen, event )
@@ -137,7 +137,7 @@ class           Miner :
     
         # すでに起動していなる時はメッセージを出す
         if self._miner :
-            result[ 'msg' ] = '!!! コマンドはすでに起動しています'
+            result[ 'msg' ]     = '!!! コマンドはすでに起動しています'
             return result
 
         # コマンドを起動する
@@ -172,7 +172,7 @@ class           Miner :
         
         # 起動していない時はメッセージを出す
         if not self.isAlive() :
-            result[ 'msg' ] = '!!! コマンドが起動していません'
+            result[ 'msg' ]     = '!!! コマンドが起動していません'
             return result
 
         # コマンドを一時停止する
@@ -204,7 +204,7 @@ class           Miner :
 
         # 起動していない時はメッセージを出す
         if not self.isAlive() :
-            result[ 'msg' ] = '!!! コマンドが起動していません'
+            result[ 'msg' ]     = '!!! コマンドが起動していません'
             return result
 
         # コマンドを再開する
@@ -235,11 +235,11 @@ class           Miner :
 
         # 起動していない時はメッセージを出す
         if not self.isAlive() :
-            result[ 'msg' ] = '!!! コマンドが起動していません'
+            result[ 'msg' ]     = '!!! コマンドが起動していません'
             return result
 
         # コマンドを停止する - 停止まで時間がかかるので別スレッドとする
-        self._stopper             = threading.Thread( target = lambda : self._miner.terminate() )
+        self._stopper       = threading.Thread( target = lambda : self._miner.terminate( 108000 ) )
         self._stopper.start()
 
         # 画面の更新データを設定する
@@ -252,15 +252,15 @@ class           Miner :
         
         result[ 'pool'   ]  = ''
 
-        result[ 'msg'    ]  = '停止しています...'
+        result[ 'msg'    ]  = '停止しています...(しばらくお待ちください)'
         
         return result
 
 
-    # マイニングコマンドの停止処理
+    # マイニングコマンドの停止待ち処理
     def             wait_stop( self, ) -> dict :
         """
-        マイニングコマンドを別スレッドで停止する
+        マイニングコマンドを別スレッドで停止されるのを待つ
 
         :return:        実行結果の更新データ
         """
@@ -269,7 +269,7 @@ class           Miner :
         result              = {}
         
         # 停止処理が終わったかをチェックする
-        self._stopper.join( timeout = 0.1 )
+        self._stopper.join( timeout = 100 / 1000.0 )
         
         # 終了したなら、停止スレッドとマイニングコマンドのインスタンスを消す
         if not self._stopper.is_alive() :
@@ -285,19 +285,6 @@ class           Miner :
             result[ 'msg' ]     = ''
 
         return result
-    
-
-    # ウィンドウを閉じる処理
-    def             close( self, ) -> None :
-        """
-        ウィンドウを閉じる
-        """
-    
-        # 起動していればコマンドを停止する
-        if self.isAlive() :
-            self._miner.terminate()
-
-        return None
 
 
     # コマンド出力から画面を更新処理
@@ -401,7 +388,7 @@ class           Miner :
 
 
     # マイニングインスタンスのチェック処理
-    def             isAlive( self, ) :
+    def             isAlive( self, ) -> bool :
         """
         マイニングインスタンスがあるか（開始前か）を返す
 
