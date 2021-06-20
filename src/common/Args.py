@@ -1,3 +1,4 @@
+
 """
 Args.py - コマンド引数を設定します
 
@@ -104,7 +105,7 @@ class       Args :
             # noinspection PyUnresolvedReferences
             return self._args[ key ]
 
-        # プロパティ値がない時はエラー
+        # オプション値がない時はエラー
         except Exception :
             raise Exception( "Args : コマンド引数にオプション {} がありません".format( key ) )
 
