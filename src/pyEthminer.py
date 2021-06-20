@@ -5,16 +5,13 @@ pyEthminer - Ethminer のマイニング制御・モニタを行う GUI プロ�
 
 # インポート
 import          PySimpleGUI                 as          S
-from            PySimpleGUI                 import Window
 
+# noinspection PyUnresolvedReferences
 from            common.Log                  import      SetupLog, Log, abort, INFO, DEBUG
 from            common.Props                import      Props
 
-from            Layout                      import      layout
+from            Layout                      import      window
 from            Miner                       import      Miner
-
-# GUI の表示フォント
-_FONT           = ( 'Anito', 14, )
 
 # パスワードジェネレータ主処理
 def         pyEthminer( title : str ) -> None :
@@ -31,7 +28,7 @@ def         pyEthminer( title : str ) -> None :
 
     # 主画面のレイアウトにより window を生成する
     screen          = 'main'
-    window          = S.Window( title = title, layout = layout( screen ), font = _FONT, )
+    win             = window( title = title, screen = 'main', )
     
     # コマンドの実行インスタンスを作る
     miner           = Miner()
@@ -40,7 +37,7 @@ def         pyEthminer( title : str ) -> None :
     while True :
 
         # 画面からのイベントをポーリングし、発生したイベントとフォーム (入力データの辞書) を得る
-        event, values       = window.read( timeout = 100, timeout_key = '_', )
+        event, values       = win.read( timeout = 100, timeout_key = '_', )
         
         # DEBUG : タイムアウト以外のイベントをトレース
         if not event == '_' :
@@ -65,25 +62,25 @@ def         pyEthminer( title : str ) -> None :
                 break
 
             # 返ってきた結果で画面を更新する
-            update( window, result )
+            update( win, result )
 
         # バリデーションおよびアクションの例外は、エラーメッセージを表示する
         except Exception as e :
             abort( '!!! エラーが発生しました ({})'.format( e ) )
 
     # ウィンドウを終了
-    window.close()
+    win.close()
     
     
 # GUI 画面の更新処理
-def             update( window : Window, result : dict ) -> None :
+def             update( win : S.Window, result : dict ) -> None :
     """
     GUI 画面の更新を行う
     パスワードジェネレータ主処理
 
     ethminer コマンドを利用してマイニングを実行します
 
-    :param window:      更新対象ウィンドウ
+    :param win:      i  更新対象ウィンドウ
     :param result:      更新データ
     """
 
@@ -92,18 +89,18 @@ def             update( window : Window, result : dict ) -> None :
     
         # 文字列が返れば、エレメントの値をアップデートする
         if isinstance( val, str ) :
-            window[ key ].update( val )
+            win[ key ].update( val )
     
         # 辞書が返れば 、エレメントの属性を展開してアップデートする
         elif isinstance( val, dict ) :
         
             # エレメントの値と属性でアップデートする : 値の文字列はキー text で指定する
             if 'text' in val :
-                window[ key ].update( val.pop( 'text' ), ** val )
+                win[ key ].update( val.pop( 'text' ), ** val )
         
             # エレメントの属性でアップデートする
             else :
-                window[ key ].update( ** val )
+                win[ key ].update( ** val )
 
 
 # エントリポイント

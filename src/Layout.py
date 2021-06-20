@@ -19,6 +19,12 @@ import          PySimpleGUI         as          S
 #
 S.theme( 'DarkGrey4' )
 
+# 表示フォント
+_FONT           = ( 'Anito', 14, )
+_FONT_SOL       = ( 'Anito', 10, )
+# _FONT           = ( 'Anito', 14, )
+# _FONT_SOL       = ( 'Anito', 10, )
+
 #
 # 使う配色を設定する
 #
@@ -41,7 +47,7 @@ _MINER_BUTTON       = [
         S.Button( '一時停止', key = 'pause', disabled = True, disabled_button_color = BLACK, ),
         S.Button( '再開', key = 'resume', disabled = True, disabled_button_color = BLACK, ),
         S.Button( '停止', key = 'stop', disabled = True, disabled_button_color = BLACK, ),
-    ]
+    ],
 ]
 
 _WINDOW_BUTTON      = [
@@ -74,38 +80,14 @@ _LAYOUT             = {
                 S.Text( 'Rejected :', size = ( 15, 1 ), justification  = 'right', ),
                 S.Text( '0000000000', key = 'reject', size = ( 15, 1 ), ),
             ],
-            # ソリューション表示
-            [
-                S.Text( '', size = ( 16, 1 ) ),
-                S.Text( '', key = 'sol0', size = ( 100, 1 ), justification = 'center', ),
-            ], [
-                S.Text( '', size = ( 16, 1 ) ),
-                S.Text( '', key = 'sol1', size = ( 100, 1 ), justification = 'center', ),
-            ], [
-                S.Text( '', size = ( 16, 1 ) ),
-                S.Text( '', key = 'sol2', size = ( 100, 1 ), justification = 'center', ),
-            ], [
-                S.Text( '', size = ( 16, 1 ) ),
-                S.Text( '', key = 'sol3', size = ( 100, 1 ), justification = 'center', ),
-            ], [
-                S.Text( '', size = ( 16, 1 ) ),
-                S.Text( '', key = 'sol4', size = ( 100, 1 ), justification = 'center', ),
-            ], [
-                S.Text( '', size = ( 16, 1 ) ),
-                S.Text( '', key = 'sol5', size = ( 100, 1 ), justification = 'center', ),
-            ], [
-                S.Text( '', size = ( 16, 1 ) ),
-                S.Text( '', key = 'sol6', size = ( 100, 1 ), justification = 'center', ),
-            ], [
-                S.Text( '', size = ( 16, 1 ) ),
-                S.Text( '', key = 'sol7', size = ( 100, 1 ), justification = 'center', ),
-            ], [
-                S.Text( '', size = ( 16, 1 ) ),
-                S.Text( '', key = 'sol8', size = ( 100, 1 ), justification = 'center', ),
-            ], [
-                S.Text( '', size = ( 16, 1 ) ),
-                S.Text( '', key = 'sol9', size = ( 100, 1 ), justification = 'center', ),
-            ],
+            # ソリューション表示 key = sol0 - sol9 の行
+            * (
+                [
+                    S.Text( '', size = ( 40, 1 ), font = _FONT_SOL, ),
+                    S.Text( '', key = 'sol' + str( i ), size = ( 100, 1 ),
+                                                    justification = 'center', font = _FONT_SOL, ),
+                ] for i in range( 0, 10 )
+            ),
             # メッセージ表示
             [
                 S.Text( '', key = 'msg', size = ( 132, 1 ), justification = 'center', ),
@@ -122,6 +104,14 @@ _LAYOUT             = {
             ]
         ],
 }
+
+
+# 画面名に応じたレイアウトを返す
+def             window( title : str, screen : str ) -> S.Window :
+    
+    if screen == 'main' :
+        return S.Window( title = title, layout = layout( screen ), font = _FONT, )
+    
 
 # 画面名に応じたレイアウトを返す
 def             layout( screen : str ) -> List :

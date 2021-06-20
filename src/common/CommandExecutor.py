@@ -120,10 +120,11 @@ class           CommandExecutor :
         # SIGTERM で終了させる
         self.proc.send_signal( SIGTERM )
         
-        # 終了を待つ
+        # 終了を待つ - timeout で終わらなければ強制終了する
         try :
             self.proc.wait( timeout / 1000.0 if timeout else None )
             
         # タイムアウト - SIGKILL で強制終了する
         except :
             self.proc.send_signal( SIGKILL )
+            self.proc.wait()

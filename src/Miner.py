@@ -6,6 +6,7 @@ Miner.py
 """
 
 # インポート
+import          threading
 from            common.Log              import      Log
 from            common.Props            import      Props
 from            common.CommandExecutor  import      CommandExecutor
@@ -30,6 +31,9 @@ class           Miner :
     
     # 接続先プール
     _pool : str                                     = ''
+    
+    # コマンド停止スレッド
+    _stopper : threading.Thread or None             = None
 
     # コンストラクタ
     def             __init__( self, ) :
@@ -57,6 +61,9 @@ class           Miner :
         self._status    = { 'job' : 0, 'accept' : 0, 'reject' : 0, 'sols' : [] }
         self._wait      = 0
 
+        # コマンド停止スレッド
+        self._stopper   = None
+        
     #
     # コマンド制御
     #
@@ -87,6 +94,10 @@ class           Miner :
         # main・_ - 画面イベントタイムアウト
         elif screen == 'main' and event == '_' :
             result          = self.status()
+
+            # タイムアウトループで停止待ちなら停止チェックをする
+            if self._stopper :
+                result          |= self.wait_stop()
 
         # main・pause - マイニングコマンドを一時停止する
         elif screen == 'main' and event == 'pause' :
@@ -122,11 +133,12 @@ class           Miner :
         """
     
         # 結果領域
-        result              = { 'msg' : '' }
+        result              = {}
     
         # すでに起動していなる時はメッセージを出す
         if self._miner :
             result[ 'msg' ] = '!!! コマンドはすでに起動しています'
+            return result
 
         # コマンドを起動する
         self._miner         = CommandExecutor( self._cmd, self._opts )
@@ -140,6 +152,8 @@ class           Miner :
         result[ 'rate'   ]  = { 'text' : '', 'background_color' : GREEN }
 
         result[ 'pool'   ]  = self._pool
+        
+        result[ 'msg'    ]  = 'マイニング中です...'
 
         # 更新データを返す
         return result
@@ -154,12 +168,13 @@ class           Miner :
         """
 
         # 結果領域
-        result              = { 'msg' : '' }
+        result              = {}
         
         # 起動していない時はメッセージを出す
         if not self.isAlive() :
             result[ 'msg' ] = '!!! コマンドが起動していません'
-    
+            return result
+
         # コマンドを一時停止する
         self._miner.pause()
 
@@ -171,6 +186,8 @@ class           Miner :
         
         result[ 'rate'   ]  = { 'text' : '', 'background_color' : YELLOW }
 
+        result[ 'msg'    ]  = '一時停止しています...'
+        
         return result
 
 
@@ -183,11 +200,12 @@ class           Miner :
         """
     
         # 結果領域
-        result              = { 'msg' : '' }
+        result              = {}
 
         # 起動していない時はメッセージを出す
         if not self.isAlive() :
             result[ 'msg' ] = '!!! コマンドが起動していません'
+            return result
 
         # コマンドを再開する
         self._miner.resume()
@@ -199,42 +217,75 @@ class           Miner :
         
         result[ 'rate'   ]  = { 'text' : '', 'background_color' : GREEN }
 
+        result[ 'msg'    ]  = 'マイニング中です...'
+        
         return result
 
 
     # マイニングコマンドの停止処理
     def             stop( self, ) -> dict :
         """
-        マイニングコマンドを停止する
+        マイニングコマンドを別スレッドで停止する
 
         :return:        実行結果の更新データ
         """
     
         # 結果領域
-        result              = { 'msg' : '' }
+        result              = {}
 
         # 起動していない時はメッセージを出す
         if not self.isAlive() :
             result[ 'msg' ] = '!!! コマンドが起動していません'
-            
-        # コマンドを停止する
-        self._miner.terminate()
+            return result
+
+        # コマンドを停止する - 停止まで時間がかかるので別スレッドとする
+        self._stopper             = threading.Thread( target = lambda : self._miner.terminate() )
+        self._stopper.start()
 
         # 画面の更新データを設定する
-        result[ 'start'  ]  = { 'disabled' : False }
-        result[ 'pause'  ]  = { 'disabled' : True  }
-        result[ 'resume' ]  = { 'disabled' : True  }
-        result[ 'stop'   ]  = { 'disabled' : True  }
+        result[ 'start'  ]  = { 'disabled' : True }
+        result[ 'pause'  ]  = { 'disabled' : True }
+        result[ 'resume' ]  = { 'disabled' : True }
+        result[ 'stop'   ]  = { 'disabled' : True }
         
         result[ 'rate'   ]  = { 'text' : '', 'background_color' : RED }
         
         result[ 'pool'   ]  = ''
+
+        result[ 'msg'    ]  = '停止しています...'
         
-        # マイニングコマンドのインスタンスを消す
-        del self._miner
-        self._miner         = None
+        return result
+
+
+    # マイニングコマンドの停止処理
+    def             wait_stop( self, ) -> dict :
+        """
+        マイニングコマンドを別スレッドで停止する
+
+        :return:        実行結果の更新データ
+        """
+    
+        # 結果領域
+        result              = {}
+        
+        # 停止処理が終わったかをチェックする
+        self._stopper.join( timeout = 0.1 )
+        
+        # 終了したなら、停止スレッドとマイニングコマンドのインスタンスを消す
+        if not self._stopper.is_alive() :
+            self._miner         = None
+            self._stopper       = None
+            
+            # 画面の更新データを設定する
+            result[ 'start'  ]  = { 'disabled' : False }
+            result[ 'pause'  ]  = { 'disabled' : True  }
+            result[ 'resume' ]  = { 'disabled' : True  }
+            result[ 'stop'   ]  = { 'disabled' : True  }
+
+            result[ 'msg' ]     = ''
 
         return result
+    
 
     # ウィンドウを閉じる処理
     def             close( self, ) -> None :
@@ -245,7 +296,7 @@ class           Miner :
         # 起動していればコマンドを停止する
         if self.isAlive() :
             self._miner.terminate()
-            
+
         return None
 
 
@@ -257,7 +308,7 @@ class           Miner :
         :return:        実行結果の更新データ。None なら終了を示す
         """
 
-        log                     = Log( __name__ )
+        log                 = Log( __name__ )
 
         # 画面更新データ
         result              = {}
@@ -408,7 +459,7 @@ class           Miner :
                 self._solutions[ i ][ 'time' ]          = time
                 self._solutions[ i ][ 'result' ]        = result
                 break
-
+                
         # 更新した内容で更新する
         return self._getSolutionList()
         
@@ -442,6 +493,10 @@ class           Miner :
                     'OK, Accepted !!!!!' if item[ 'result' ] else 'Oops, Rejected ...'
                 )
                 line            |= { 'background_color' : BLUE if item[ 'result' ] else YELLOW }
+                
+            # なければ result 待ち、色を変える
+            else :
+                line            |= { 'background_color' : GREEN }
 
             # 画面の更新データにリストの行を追加する
             result[ 'sol' + str( i ) ]      = line
