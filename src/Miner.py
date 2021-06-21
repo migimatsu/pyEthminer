@@ -11,7 +11,7 @@ from            common.Log              import      Log
 from            common.Props            import      Props
 from            common.CommandExecutor  import      CommandExecutor
 
-from            Layout                  import      GREEN, RED, YELLOW, BLUE
+from            Layout                  import      _GREEN, _RED, _YELLOW, _BLUE
 
 
 # マイニングコマンドの実行クラス
@@ -68,62 +68,6 @@ class           Miner :
     # コマンド制御
     #
 
-    # マイニングコマンドの制御アクション処理
-    def             do( self, screen : str, event : str, _ : dict ) -> dict[ str, str or dict ] or None :
-        """
-        マイニングコマンドの制御アクション処理
-
-        イベントに対応するアクションを実行し、実行結果を更新データとして返す
-
-        :param screen:      画面名
-        :param event:       発生したイベント名
-        :param _:           受信したフォームデータの組
-        :return:            結果としてのフォーム更新データ（文字列またはフィールド名と値の組）。None なら終了を示す
-        """
-        
-        # ロガー
-        _               = Log( __name__ )
-
-        # アクションの結果領域
-        result          = {}
-
-        # main・start - マイニングコマンドを開始する
-        if screen == 'main' and event == 'start' :
-            result          = self.start()
-
-        # main・_ - 画面イベントタイムアウト
-        elif screen == 'main' and event == '_' :
-            result          = self.status()
-
-            # タイムアウトループで停止待ちなら停止チェックをする
-            if self._stopper :
-                result          |= self.wait_stop()
-
-        # main・pause - マイニングコマンドを一時停止する
-        elif screen == 'main' and event == 'pause' :
-            result          = self.pause()
-
-        # main・resume - マイニングコマンドを再開する
-        elif screen == 'main' and event == 'resume' :
-            result          = self.resume()
-
-        # main・stop - マイニングコマンドを停止する
-        elif screen == 'main' and event == 'stop' :
-            result          = self.stop()
-
-        # main・close - ウィンドウを終了する
-        elif ( screen == 'main' and event == 'close' ) or event is None :
-            self.stop()
-            return None
-            
-        # 対応するアクションがなければメッセージを出す
-        else :
-            result[ 'msg' ] = '!!! 画面 {} イベント {} が定義されていません'.format( screen, event )
-
-        # 結果 (画面の更新データ) を返す - None を返すと window は終了する
-        return result
-
-
     # マイニングコマンドの起動処理
     def             start( self, ) -> dict or None :
         """
@@ -149,7 +93,8 @@ class           Miner :
         result[ 'resume' ]  = { 'disabled' : True  }
         result[ 'stop'   ]  = { 'disabled' : False }
     
-        result[ 'rate'   ]  = { 'text' : '', 'background_color' : GREEN }
+        result[ 'rate'   ]  = { 'text' : '', 'background_color' : _GREEN }
+        result[ 'diff'   ]  = { 'text' : '', }
 
         result[ 'pool'   ]  = self._pool
         
@@ -184,7 +129,8 @@ class           Miner :
         result[ 'resume' ]  = { 'disabled' : False }
         result[ 'stop'   ]  = { 'disabled' : False }
         
-        result[ 'rate'   ]  = { 'text' : '', 'background_color' : YELLOW }
+        result[ 'rate'   ]  = { 'text' : '', 'background_color' : _YELLOW }
+        result[ 'diff'   ]  = { 'text' : '', }
 
         result[ 'msg'    ]  = '一時停止しています...'
         
@@ -215,7 +161,8 @@ class           Miner :
         result[ 'resume' ]  = { 'disabled' : True  }
         result[ 'stop'   ]  = { 'disabled' : False }
         
-        result[ 'rate'   ]  = { 'text' : '', 'background_color' : GREEN }
+        result[ 'rate'   ]  = { 'text' : '', 'background_color' : _GREEN }
+        result[ 'diff'   ]  = { 'text' : '', }
 
         result[ 'msg'    ]  = 'マイニング中です...'
         
@@ -239,6 +186,7 @@ class           Miner :
             return result
 
         # コマンドを停止する - 停止まで時間がかかるので別スレッドとする
+        self._miner.resume()
         self._stopper       = threading.Thread( target = lambda : self._miner.terminate( 108000 ) )
         self._stopper.start()
 
@@ -248,11 +196,12 @@ class           Miner :
         result[ 'resume' ]  = { 'disabled' : True }
         result[ 'stop'   ]  = { 'disabled' : True }
         
-        result[ 'rate'   ]  = { 'text' : '', 'background_color' : RED }
-        
+        result[ 'rate'   ]  = { 'text' : '', 'background_color' : _RED }
+        result[ 'diff'   ]  = { 'text' : '', }
+
         result[ 'pool'   ]  = ''
 
-        result[ 'msg'    ]  = '停止しています...(しばらくお待ちください)'
+        result[ 'msg'    ]  = '停止しています... (しばらくお待ちください)'
         
         return result
 
@@ -268,6 +217,10 @@ class           Miner :
         # 結果領域
         result              = {}
         
+        # 停止待ちでなければ何もしない
+        if not self._stopper :
+            return result
+            
         # 停止処理が終わったかをチェックする
         self._stopper.join( timeout = 100 / 1000.0 )
         
@@ -335,7 +288,7 @@ class           Miner :
             result[ 'job' ]             = '{:010} : {} : {}'.format( self._status[ 'job' ], col[ 1 ], col[ 3 ], )
     
         # 'i' で始まる Accept 行の時 - Solution のリストを ACCEPT で更新する
-        elif col[ 0 ] == 'i' and 'Accept' in line and self._wait :
+        elif col[ 0 ] == 'i' and '**Accepted' in line and self._wait :
         
             # Accept 数を更新する　
             self._status[ 'accept' ]    += 1
@@ -346,7 +299,7 @@ class           Miner :
             result                      |= self._updateSolution( col[ 1 ], True )
             
         # 'X' で始まる Reject / No response 行の時 - Solution のリストを REJECT で更新する
-        elif col[ 0 ] == 'X' and ( 'Reject' in line or 'No response' in line ) and self._wait :
+        elif col[ 0 ] == 'X' and ( '**Rejected' in line or 'No response' in line ) and self._wait :
         
             # Reject 数を更新する　
             self._status[ 'reject' ]    += 1
@@ -359,7 +312,12 @@ class           Miner :
         # ' m' で始まるハッシュレートの時 - ハッシュレートを更新する
         elif col[ 0 ] == 'm' :
             result[ 'rate' ]            = '{} {}'.format( col[ 4 ], col[ 5 ], )
-    
+
+        # ' i' で始まる Difficulty 行の時 -  Solution のリストに更新する
+        elif col[ 0 ] == 'i' and 'Difficulty' in line :
+            result[ 'diff' ]            = { 'text' : '{} {}'.format( col[ 7 ], col[ 8 ], ), }
+            
+        # 更新データを返す
         return result
 
     #
@@ -428,6 +386,7 @@ class           Miner :
             
         return self._getSolutionList()
         
+        
     # ソリューションリストの追加処理
     def             _updateSolution( self, time : str, result : bool ) -> dict :
         """
@@ -479,11 +438,11 @@ class           Miner :
                 line[ 'text' ]      += ' -> Result = {}'.format(
                     'OK, Accepted !!!!!' if item[ 'result' ] else 'Oops, Rejected ...'
                 )
-                line            |= { 'background_color' : BLUE if item[ 'result' ] else YELLOW }
+                line            |= { 'background_color' : _BLUE if item[ 'result' ] else _YELLOW }
                 
             # なければ result 待ち、色を変える
             else :
-                line            |= { 'background_color' : GREEN }
+                line            |= { 'background_color' : _GREEN }
 
             # 画面の更新データにリストの行を追加する
             result[ 'sol' + str( i ) ]      = line

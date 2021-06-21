@@ -25,14 +25,12 @@ _FONT_SOL       = ( 'Anito', 10, )
 # _FONT           = ( 'Anito', 14, )
 # _FONT_SOL       = ( 'Anito', 10, )
 
-#
-# 使う配色を設定する
-#
-BLACK       = '#000000'
-RED         = '#BC3F3C'
-GREEN       = '#32593D'
-BLUE        = '#3993D4'
-YELLOW      = '#A87B00'
+# フォント・バックグラウンド色
+_BLACK       = '#000000'
+_RED         = '#BC3F3C'
+_GREEN       = '#32593D'
+_BLUE        = '#3993D4'
+_YELLOW      = '#A87B00'
 
 #
 # 画面のレイアウト
@@ -43,10 +41,10 @@ YELLOW      = '#A87B00'
 # 部分レイアウト - 制御ボタン
 _MINER_BUTTON       = [
     [
-        S.Button( '開始', key = 'start', disabled = False, disabled_button_color = BLACK, ),
-        S.Button( '一時停止', key = 'pause', disabled = True, disabled_button_color = BLACK, ),
-        S.Button( '再開', key = 'resume', disabled = True, disabled_button_color = BLACK, ),
-        S.Button( '停止', key = 'stop', disabled = True, disabled_button_color = BLACK, ),
+        S.Button( '開始', key = 'start', disabled = False, disabled_button_color = _BLACK, ),
+        S.Button( '一時停止', key = 'pause', disabled = True, disabled_button_color = _BLACK, ),
+        S.Button( '再開', key = 'resume', disabled = True, disabled_button_color = _BLACK, ),
+        S.Button( '停止', key = 'stop', disabled = True, disabled_button_color = _BLACK, ),
     ],
 ]
 
@@ -70,7 +68,9 @@ _LAYOUT             = {
             # 状況
             [
                 S.Text( 'ハッシュレート', size = ( 20, 1 ), justification  = 'right', ),
-                S.Text( '', key = 'rate', size = ( 100, 1 ), justification  = 'center', background_color = RED ),
+                S.Text( '', key = 'rate', size = ( 40, 1 ), justification  = 'center', background_color = _RED ),
+                S.Text( '難易度', size = ( 20, 1 ), justification = 'right', ),
+                S.Text( '', key = 'diff', size = ( 40, 1 ), justification = 'center' ),
             ],
             [
                 S.Text( 'Job :', size = ( 15, 1 ), justification = 'right', ),
@@ -106,9 +106,16 @@ _LAYOUT             = {
 }
 
 
-# 画面名に応じたレイアウトを返す
+# 画面名に応じたウィンドウを返す
 def             window( title : str, screen : str ) -> S.Window :
-    
+    """
+    画面名に応じたウィンドウを返す
+
+    :param title:       ウィンドウタイトル
+    :param screen:      画面名
+    :return:            ウィンドウオブジェクト
+    """
+
     if screen == 'main' :
         return S.Window( title = title, layout = layout( screen ), font = _FONT, )
     

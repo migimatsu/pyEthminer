@@ -7,7 +7,7 @@ CommandExecutor.py
 
 # インポート
 import          select
-from            signal              import      SIGSTOP, SIGCONT, SIGKILL, SIGTERM
+from            signal              import      SIGSTOP, SIGCONT
 from            subprocess          import      Popen, STDOUT, PIPE
 
 # システムコマンドの実行クラス
@@ -118,7 +118,7 @@ class           CommandExecutor :
             return
             
         # SIGTERM で終了させる
-        self.proc.send_signal( SIGTERM )
+        self.proc.terminate()
         
         # 終了を待つ - timeout で終わらなければ強制終了する
         try :
@@ -126,5 +126,5 @@ class           CommandExecutor :
             
         # タイムアウト - SIGKILL で強制終了する
         except :
-            self.proc.send_signal( SIGKILL )
+            self.proc.kill()
             self.proc.wait()

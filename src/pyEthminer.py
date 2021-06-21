@@ -47,32 +47,81 @@ def         pyEthminer( title : str ) -> None :
         try :
     
             # イベントに応じたアクションを実行し、画面を更新するための結果を得る
-            result       = miner.do( screen, event, values )
+            result       = _do( screen, event, miner )
 
-            # 更新がなければ次のポーリングへ
-            if result == {} :
-                continue
-
-            # DEBUG : タイムアウト以外の結果をトレース
-            log.debug( '結果データ : ' + str( result ) )
-            
-            # event が None ならウィンドウを閉じる
+            # event が None なら終了処理を行ってからウィンドウを閉じる
             if result is None :
+                _closing( win, miner )
                 break
 
+            # DEBUG : タイムアウト以外の結果をトレース
+            elif not result == {} :
+                log.debug( '結果データ : ' + str( result ) )
+            
             # 返ってきた結果で画面を更新する
-            update( win, result )
+            _update( win, result )
 
         # バリデーションおよびアクションの例外は、エラーメッセージを表示する
         except Exception as e :
             abort( '!!! エラーが発生しました ({})'.format( e ) )
 
-    # ウィンドウを終了
-    win.close()
+    # ウィンドウを閉じる
+    return None
+
+
+# マイニングコマンドの制御アクション処理
+def             _do( screen : str, event : str, miner : Miner ) -> dict[ str, str or dict ] or None :
+    """
+    マイニングコマンドの制御アクション処理
+
+    イベントに対応するアクションを実行し、実行結果を更新データとして返す
+
+    :param screen:      画面名
+    :param event:       発生したイベント名
+    :param miner:       コマンド実行インスタンス
+    :return:            結果としてのフォーム更新データ（文字列またはフィールド名と値の組）。None なら終了を示す
+    """
     
+    # アクションの結果領域
+    result          = {}
     
+    # main・start - マイニングコマンドを開始する
+    if screen == 'main' and event == 'start' :
+        result          = miner.start()
+    
+    # main・_ - 画面イベントタイムアウト
+    elif screen == 'main' and event == '_' :
+        result          = miner.status()
+
+        # 停止完了のチェックをする（停止待ちでないなら何もしない）
+        result          |= miner.wait_stop()
+
+    # main・pause - マイニングコマンドを一時停止する
+    elif screen == 'main' and event == 'pause' :
+        result          = miner.pause()
+    
+    # main・resume - マイニングコマンドを再開する
+    elif screen == 'main' and event == 'resume' :
+        result          = miner.resume()
+    
+    # main・stop - マイニングコマンドを停止する
+    elif screen == 'main' and event == 'stop' :
+        result          = miner.stop()
+    
+    # main・close - ウィンドウを終了する
+    elif ( screen == 'main' and event == 'close' ) or event is None :
+        return None
+    
+    # 対応するアクションがなければメッセージを出す
+    else :
+        result[ 'msg' ] = '!!! 画面 {} イベント {} が定義されていません'.format( screen, event )
+
+    # 結果 (画面の更新データ) を返す - None を返すと window は終了する
+    return result
+
+
 # 画面の更新処理
-def             update( win : S.Window, result : dict ) -> None :
+def             _update( win : S.Window, result : dict ) -> None :
     """
     画面の更新を行う
     パスワードジェネレータ主処理
@@ -100,6 +149,30 @@ def             update( win : S.Window, result : dict ) -> None :
             # エレメントの属性でアップデートする
             else :
                 win[ key ].update( ** val )
+
+
+# ウィンドウの終了時処理
+def             _closing( win: S.Window, miner: Miner ) -> None :
+    """
+    ウィンドウの終了時のコマンド停止処理を行う
+
+    :param win:         ウィンドウ
+    :param miner:       コマンドの実行インスタンス
+    """
+    
+    # コマンド起動中なら停止してから終了する
+    if miner.isAlive() :
+        
+        # コマンドを停止する
+        _update( win, miner.stop() )
+        win.refresh()
+        
+        # コマンドの終了を待つ
+        while miner.isAlive() :
+            miner.wait_stop()
+    
+    # ウィンドウを終了
+    win.close()
 
 
 # エントリポイント
