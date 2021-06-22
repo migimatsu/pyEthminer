@@ -7,6 +7,7 @@ Miner.py
 
 # インポート
 import          threading
+
 from            common.Log              import      Log
 from            common.Props            import      Props
 from            common.CommandExecutor  import      CommandExecutor
@@ -40,7 +41,7 @@ class           Miner :
         """
         コンストラクタ
         """
-
+        
         # コマンド実行インスタンス
         _miner          = None
 
@@ -94,7 +95,6 @@ class           Miner :
         result[ 'stop'   ]  = { 'disabled' : False }
     
         result[ 'rate'   ]  = { 'text' : '', 'background_color' : _GREEN }
-        result[ 'diff'   ]  = { 'text' : '', }
 
         result[ 'pool'   ]  = self._pool
         
@@ -130,7 +130,6 @@ class           Miner :
         result[ 'stop'   ]  = { 'disabled' : False }
         
         result[ 'rate'   ]  = { 'text' : '', 'background_color' : _YELLOW }
-        result[ 'diff'   ]  = { 'text' : '', }
 
         result[ 'msg'    ]  = '一時停止しています...'
         
@@ -162,7 +161,6 @@ class           Miner :
         result[ 'stop'   ]  = { 'disabled' : False }
         
         result[ 'rate'   ]  = { 'text' : '', 'background_color' : _GREEN }
-        result[ 'diff'   ]  = { 'text' : '', }
 
         result[ 'msg'    ]  = 'マイニング中です...'
         
@@ -187,7 +185,7 @@ class           Miner :
 
         # コマンドを停止する - 停止まで時間がかかるので別スレッドとする
         self._miner.resume()
-        self._stopper       = threading.Thread( target = lambda : self._miner.terminate( 108000 ) )
+        self._stopper       = threading.Thread( target = lambda : self._miner.terminate() )
         self._stopper.start()
 
         # 画面の更新データを設定する
@@ -197,7 +195,6 @@ class           Miner :
         result[ 'stop'   ]  = { 'disabled' : True }
         
         result[ 'rate'   ]  = { 'text' : '', 'background_color' : _RED }
-        result[ 'diff'   ]  = { 'text' : '', }
 
         result[ 'pool'   ]  = ''
 
@@ -268,9 +265,11 @@ class           Miner :
         # 行をログして単語に分解する
         line                = line.replace( '\n', '' )
         
-        # DEBUG : タイムアウト/EOF 以外の入力をトレース
+        # ログ行
+        result[ 'log' ]     = line[ 20 : ]
         log.info( line )
-        
+
+        # 行を単語に分割して解析する
         col                 = line.split()
 
         # 文字がない時は何もしない
@@ -311,12 +310,12 @@ class           Miner :
             
         # ' m' で始まるハッシュレートの時 - ハッシュレートを更新する
         elif col[ 0 ] == 'm' :
-            result[ 'rate' ]            = '{} {}'.format( col[ 4 ], col[ 5 ], )
+            color                       = _BLUE if float( col[ 4 ] ) > 2.0 and col[ 5 ] == 'Mh' else _GREEN
+            result[ 'rate' ]            = {
+                'text' : '{} {}'.format( col[ 4 ], col[ 5 ], ),
+                'background_color' : color
+            }
 
-        # ' i' で始まる Difficulty 行の時 -  Solution のリストに更新する
-        elif col[ 0 ] == 'i' and 'Difficulty' in line :
-            result[ 'diff' ]            = { 'text' : '{} {}'.format( col[ 7 ], col[ 8 ], ), }
-            
         # 更新データを返す
         return result
 

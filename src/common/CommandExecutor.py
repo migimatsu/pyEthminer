@@ -45,11 +45,11 @@ class           CommandExecutor :
         r, _, _         = select.select( [ self.proc.stdout, ], [], [],
                                          None if not timeout else timeout / 1000.0, )
 
-        # 読めなければ None を返す
+        # 読める行がなければ None を返す
         if not r :
             return None
 
-        # 読めれば一行読む。EOF は空文字列が帰る
+        # 読める行があるなら一行読む。EOF は空文字列が帰る
         else :
             return self.proc.stdout.readline().decode()
 
@@ -60,7 +60,7 @@ class           CommandExecutor :
         コマンドから読み込み
 
         :param timeout: 読み込みタイムアウト ms
-        :return:        コマンドからの出力行を一行づつジェネレータで返す。読めなければ None、EOF なら終端を返す
+        :return:        コマンドからの出力行を一行づつジェネレータで返す。読めなければ None 返し、EOF なら終端となる
         """
 
         # 標準出力または標準エラー出力を待ち、読めたらそれを一行返す。EOF なら終端を返す
@@ -68,23 +68,22 @@ class           CommandExecutor :
 
             # 読めるかをチェックする
             r, _, _         = select.select( [ self.proc.stdout, ], [], [],
-                                             None if not timeout else timeout / 1000.0, )
+                                                 None if not timeout else timeout / 1000.0, )
 
-            # 読めなければ None を返すのみ
+            # 読める行がなければ None を返す
             if not r :
                 yield None
 
-            # 読めれば一行読む
+            # 読める行があるなら一行読む
             else :
                 l               = self.proc.stdout.readline().decode()
 
-                # 読めた行を返す
-                if l :
-                    yield l
-
-                # EOF (空文字列) なら終端
-                else :
+                # EOF (空文字列) なら終端とする
+                if not l :
                     break
+                    
+                # 読めた行を返す
+                yield l
 
 
     # マイニングコマンド一時停止
@@ -106,11 +105,14 @@ class           CommandExecutor :
             self.proc.send_signal( SIGCONT )
 
     # マイニングコマンド終了
-    def             terminate( self, timeout : int or None = None ) -> None :
+    def             terminate( self, timeout : int or None = 180 ) -> None :
         """
         コマンド終了
         
-        :param timeout:         終了待ちタイムアウト
+        SIGTERM によりコマンドを停止させ、終了を待つ
+        timeout 秒たっても終了しなければ SIGKILL により強制終了させる
+        
+        :param timeout:         終了待ちタイムアウト : 秒 - None 無限は無限に待つ デフォルト 180 秒
         """
         
         # コマンドがなければ何もしない
@@ -122,9 +124,9 @@ class           CommandExecutor :
         
         # 終了を待つ - timeout で終わらなければ強制終了する
         try :
-            self.proc.wait( timeout / 1000.0 if timeout else None )
+            self.proc.wait( timeout if timeout else None )
             
         # タイムアウト - SIGKILL で強制終了する
-        except :
+        except Exception :
             self.proc.kill()
             self.proc.wait()

@@ -17,7 +17,8 @@ import          PySimpleGUI         as          S
 # デザインテーマの設定をする
 #       レイアウトの定義より前にテーマを設定すること
 #
-S.theme( 'DarkGrey4' )
+# S.theme( 'DarkGrey4' )
+S.theme( 'DarkBlue3' )
 
 # 表示フォント
 _FONT           = ( 'Anito', 14, )
@@ -26,7 +27,7 @@ _FONT_SOL       = ( 'Anito', 10, )
 # _FONT_SOL       = ( 'Anito', 10, )
 
 # フォント・バックグラウンド色
-_BLACK       = '#000000'
+_DISABLE     = '#616161'
 _RED         = '#BC3F3C'
 _GREEN       = '#32593D'
 _BLUE        = '#3993D4'
@@ -41,10 +42,10 @@ _YELLOW      = '#A87B00'
 # 部分レイアウト - 制御ボタン
 _MINER_BUTTON       = [
     [
-        S.Button( '開始', key = 'start', disabled = False, disabled_button_color = _BLACK, ),
-        S.Button( '一時停止', key = 'pause', disabled = True, disabled_button_color = _BLACK, ),
-        S.Button( '再開', key = 'resume', disabled = True, disabled_button_color = _BLACK, ),
-        S.Button( '停止', key = 'stop', disabled = True, disabled_button_color = _BLACK, ),
+        S.Button( '開始', key = 'start', disabled = False, disabled_button_color = _DISABLE, ),
+        S.Button( '一時停止', key = 'pause', disabled = True, disabled_button_color = _DISABLE, ),
+        S.Button( '再開', key = 'resume', disabled = True, disabled_button_color = _DISABLE, ),
+        S.Button( '停止', key = 'stop', disabled = True, disabled_button_color = _DISABLE, ),
     ],
 ]
 
@@ -68,9 +69,8 @@ _LAYOUT             = {
             # 状況
             [
                 S.Text( 'ハッシュレート', size = ( 20, 1 ), justification  = 'right', ),
-                S.Text( '', key = 'rate', size = ( 40, 1 ), justification  = 'center', background_color = _RED ),
-                S.Text( '難易度', size = ( 20, 1 ), justification = 'right', ),
-                S.Text( '', key = 'diff', size = ( 40, 1 ), justification = 'center' ),
+                S.Text( '', key = 'rate', size = ( 20, 1 ), justification  = 'center', background_color = _RED ),
+                S.Text( '', key = 'log', size = ( 80, 1 ), justification = 'left' ),
             ],
             [
                 S.Text( 'Job :', size = ( 15, 1 ), justification = 'right', ),
