@@ -28,14 +28,11 @@ class       Args :
     コマンド引数のクラス
     """
     
-    # コマンド引数
-    _args : Dict[ str, str ] or None        = None
-
     # コンストラクタ
     def         __init_(
         self,
-        spec        : List[ Dict[ str, str or Dict[ str, str ] ] ] = None,
-        validate    : Callable[ [], None ]  or None = None,
+        spec : List[ Dict[ str, str or Dict[ str, str ] ] ]     = None,
+        validate : Callable[ [], None ]  or None                = None,
     ) -> None :
         """
         コンストラクタ
@@ -52,7 +49,10 @@ class       Args :
         :param validate:    プロファイルの各項目の値のバリデーションを行う関数
         :return:            None. エラーの時は例外オブジェクトを返す
         """
-        
+
+        # コマンド引数
+        self._args : Dict[ str, str ] or None       = None
+
         # 引数パーサを得る
         parser          = ap.ArgumentParser( description = '', exit_on_error = False )
         

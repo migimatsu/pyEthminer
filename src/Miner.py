@@ -6,7 +6,7 @@ Miner.py
 """
 
 # インポート
-import          threading
+from            threading               import      Thread
 
 from            common.Log              import      Log
 from            common.Props            import      Props
@@ -14,34 +14,11 @@ from            common.CommandExecutor  import      CommandExecutor
 
 from            Layout                  import      _GREEN, _RED, _YELLOW, _BLUE
 
-
 # マイニングコマンドの実行クラス
 class           Miner :
     """
     マイニングコマンドの実行クラス
     """
-
-    # コマンド実行インスタンス
-    _miner : CommandExecutor or None    = None
-
-    # コマンドとオプション引数
-    _cmd : str                          = ''
-    
-    # オプション引数
-    _opts : list[ str ]                 = []
-    
-    # 接続先プール
-    _pool : str                         = ''
-    
-    # コマンド停止スレッド
-    _stopper : threading.Thread or None = None
-
-    # 実行ステータス
-    _status : dict[ str, int or dict ]              = {}
-
-    # ソリューション行 { solution : str, result : str } のリスト、最新 10 個
-    _solutions : list[ dict[ str, str or bool ] ]   = []
-    _wait : int                                     = 0
 
     # コンストラクタ
     def             __init__( self, ) :
@@ -50,28 +27,37 @@ class           Miner :
         """
         
         # コマンド実行インスタンス
-        _miner          = None
+        self._miner : CommandExecutor or None                   = None
 
         # コマンド
-        self._cmd       = Props.props( 'MINER', 'CMD' )
+        self._cmd : str                                         = Props.props( 'MINER', 'CMD' )
         
         # 接続先プール
-        self._pool      = (
+        self._pool : str                                        = (
             Props.props( 'POOL', 'PROTOCOL' )
                 + '://' + Props.props( 'POOL', 'USER' ) + '.' + Props.props( 'POOL', 'WORKER' )
                 + '@' + Props.props( 'POOL', 'HOST' )
         )
 
         # オプション引数
-        self._opts      = [ *Props.props( 'MINER', 'OPTIONS' ).split(), '-P', self._pool ]
-
-        # 実行ステータス - Job / Accepted / Rejected の数と Solution のリスト
-        self._status    = { 'job' : 0, 'accept' : 0, 'reject' : 0, 'sols' : [] }
-        self._wait      = 0
+        self._opts : list                                       = (
+            [ *Props.props( 'MINER', 'OPTIONS' ).split(), '-P', self._pool ]
+        )
 
         # コマンド停止スレッド
-        self._stopper   = None
-        
+        self._stopper : Thread or None                          = None
+
+        # 実行ステータス
+        self._status : dict[ str, int or dict ]                 = (
+            { 'job' : 0, 'accept' : 0, 'reject' : 0, 'sols' : [] }
+        )
+
+        # ソリューション行 { solution : str, result : str } のリスト、最新 10 個
+        self._solutions : list[ dict[ str, str or bool ] ]      = []
+
+        # ソリューション行に対する結果待ち数
+        self._wait : int                                        = 0
+
     #
     # コマンド制御
     #
@@ -196,7 +182,7 @@ class           Miner :
 
         # コマンドを停止する - 停止まで時間がかかるので別スレッドとする
         self._miner.resume()
-        self._stopper       = threading.Thread( target = lambda : self._miner.terminate() )
+        self._stopper       = Thread( target = lambda : self._miner.terminate() )
         self._stopper.start()
 
         # 画面の更新データを設定する
