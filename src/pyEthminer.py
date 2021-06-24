@@ -39,26 +39,26 @@ def         pyEthminer( title : str ) -> None :
         # 画面からのイベントをポーリングし、発生したイベントとフォーム (入力データの辞書) を得る
         event, values   = win.read( timeout = 100, timeout_key = '_', )
         
-        # DEBUG : タイムアウト以外のイベントをトレース
-        if not event == '_' :
-            log.debug( '受信データ : {}, {}'.format( event, str( values ) ) )
-
         # イベント毎の処理を行う
         try :
     
-            # イベントに応じたアクションを実行し、画面を更新するための結果を得る
-            result       = _do( screen, event, miner )
+            # DEBUG : タイムアウト以外のイベントをトレース
+            if not event == '_' :
+                log.debug( '受信データ : {}, {}'.format( event, str( values ) ) )
+                
+            # イベントに応じたアクションを実行し、画面を更新するためのデータを得る
+            result       = _do( screen, event, values, miner )
 
             # event が None なら終了処理を行ってからウィンドウを閉じる
             if result is None :
                 _closing( win, miner )
                 break
 
-            # DEBUG : タイムアウト以外の結果をトレース
-            elif not result == {} :
+            # DEBUG : 更新データがあればトレース
+            if not result == {} :
                 log.debug( '結果データ : ' + str( result ) )
             
-            # 返ってきた結果で画面を更新する
+            # 返ってきた更新データで画面を更新する
             _update( win, result )
 
         # バリデーションおよびアクションの例外は、エラーメッセージを表示する
@@ -70,7 +70,7 @@ def         pyEthminer( title : str ) -> None :
 
 
 # マイニングコマンドの制御アクション処理
-def             _do( screen : str, event : str, miner : Miner ) -> dict[ str, str or dict ] or None :
+def             _do( screen : str, event : str, _ : dict, miner : Miner ) -> dict[ str, str or dict ] or None :
     """
     マイニングコマンドの制御アクション処理
 
@@ -164,7 +164,7 @@ def             _closing( win: S.Window, miner: Miner ) -> None :
     if miner.isAlive() :
         
         # コマンドを停止する
-        _update( win, miner.stop() )
+        _update( win, miner.stop( 'コマンド動作中です' ) )
         win.refresh()
         
         # コマンドの終了を待つ

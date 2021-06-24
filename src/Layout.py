@@ -14,24 +14,21 @@ from            typing              import      List
 import          PySimpleGUI         as          S
 
 #
-# デザインテーマの設定をする
-#       レイアウトの定義より前にテーマを設定すること
+# デザインテーマの設定をする - レイアウトの定義より前にテーマを設定すること
 #
-# S.theme( 'DarkGrey4' )
 S.theme( 'DarkBlue3' )
+# S.theme( 'DarkGrey4' )
 
 # 表示フォント
-_FONT           = ( 'Anito', 14, )
-_FONT_SOL       = ( 'Anito', 10, )
-# _FONT           = ( 'Anito', 14, )
-# _FONT_SOL       = ( 'Anito', 10, )
+_FONT               = ( 'Anito', 14, )
+_FONT_SOL           = ( 'Anito', 10, )
 
 # フォント・バックグラウンド色
-_DISABLE     = '#616161'
-_RED         = '#BC3F3C'
-_GREEN       = '#32593D'
-_BLUE        = '#3993D4'
-_YELLOW      = '#A87B00'
+_DISABLE            = '#808080'
+_RED                = '#BC3F3C'
+_GREEN              = '#32593D'
+_BLUE               = '#3993D4'
+_YELLOW             = '#A87B00'
 
 #
 # 画面のレイアウト
@@ -93,9 +90,9 @@ _LAYOUT             = {
                 S.Text( '', key = 'msg', size = ( 132, 1 ), justification = 'center', ),
             ],
             # ログ表示 - デバッグ用
-            # [
-            #     S.Output( size = ( 132, 10 ), ),
-            # ],
+            [
+                S.Output( size = ( 132, 10 ), ),
+            ],
             # 制御ボタン
             [
                 S.Text( '', size = ( 30, 1 ) ),

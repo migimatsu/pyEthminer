@@ -36,6 +36,13 @@ class           Miner :
     # コマンド停止スレッド
     _stopper : threading.Thread or None = None
 
+    # 実行ステータス
+    _status : dict[ str, int or dict ]              = {}
+
+    # ソリューション行 { solution : str, result : str } のリスト、最新 10 個
+    _solutions : list[ dict[ str, str or bool ] ]   = []
+    _wait : int                                     = 0
+
     # コンストラクタ
     def             __init__( self, ) :
         """
@@ -99,6 +106,9 @@ class           Miner :
         result[ 'pool'   ]  = self._pool
         
         result[ 'msg'    ]  = 'マイニング中です...'
+        
+        # 結果待ち数をリセットする
+        self._wait          = 0
 
         # 更新データを返す
         return result
@@ -168,10 +178,11 @@ class           Miner :
 
 
     # マイニングコマンドの停止処理
-    def             stop( self, ) -> dict :
+    def             stop( self, msg : str = None ) -> dict :
         """
         マイニングコマンドを別スレッドで停止する
 
+        :param msg:     停止事由
         :return:        実行結果の更新データ
         """
     
@@ -198,7 +209,7 @@ class           Miner :
 
         result[ 'pool'   ]  = ''
 
-        result[ 'msg'    ]  = '停止しています... (しばらくお待ちください)'
+        result[ 'msg'    ]  = msg if msg else '' + '停止しています... (しばらくお待ちください)'
         
         return result
 
@@ -253,9 +264,9 @@ class           Miner :
         # コマンド出力があるかをを読んでみる
         line                = self.read()
         
-        # EOF の時はメッセージを出力する
+        # EOF の時は、コマンドを止める
         if line == '' :
-            result[ 'msg' ]     = '!!! EOF を検出しました'
+            result                  = self.stop( 'EOF を検出しました' )
             return result
 
         # 空文字列の時は何もしない
@@ -280,13 +291,14 @@ class           Miner :
         if col[ 0 ] == 'cl' and line.find( 'Sol:' ) > 0 :
             self._wait                  += 1
             result                      |= self._addSolution( col[ 1 ], col[ 6 ] )
+            print( line )
 
         # 'i' で始まる Job 行の時 - Job 行を更新する
         elif col[ 0 ] == 'i' and line.find( 'Job:' ) > 0 :
             self._status[ 'job' ]       += 1
             result[ 'job' ]             = '{:010} : {} : {}'.format( self._status[ 'job' ], col[ 1 ], col[ 3 ], )
     
-        # 'i' で始まる Accept 行の時 - Solution のリストを ACCEPT で更新する
+        # 'i' で始まる Accepted 行の時 - Solution のリストを ACCEPT で更新する
         elif col[ 0 ] == 'i' and '**Accepted' in line and self._wait :
         
             # Accept 数を更新する　
@@ -296,18 +308,23 @@ class           Miner :
         
             # Solution のリストに加えて更新する
             result                      |= self._updateSolution( col[ 1 ], True )
-            
-        # 'X' で始まる Reject / No response 行の時 - Solution のリストを REJECT で更新する
-        elif col[ 0 ] == 'X' and ( '**Rejected' in line or 'No response' in line ) and self._wait :
+            print( line )
+
+        # 'X' で始まる Rejected / No response 行の時 - Solution のリストを REJECT で更新する
+        elif col[ 0 ] == 'X' :
+
+            if ( '**Rejected' in line or 'No response' in line ) and self._wait :
         
-            # Reject 数を更新する　
-            self._status[ 'reject' ]    += 1
-            self._wait                  -= 1
-            result[ 'reject' ]          = '{:010}'.format( self._status[ 'reject' ], )
-        
-            # Solution のリストに加えて更新する
-            result                      |= self._updateSolution( col[ 1 ], False )
-            
+                # Reject 数を更新する　
+                self._status[ 'reject' ]    += 1
+                self._wait                  -= 1
+                result[ 'reject' ]          = '{:010}'.format( self._status[ 'reject' ], )
+
+                # Solution のリストに加えて更新する
+                result                      |= self._updateSolution( col[ 1 ], False )
+
+            print( line )
+
         # ' m' で始まるハッシュレートの時 - ハッシュレートを更新する
         elif col[ 0 ] == 'm' :
             color                       = _BLUE if float( col[ 4 ] ) > 2.0 and col[ 5 ] == 'Mh' else _GREEN
@@ -358,13 +375,6 @@ class           Miner :
     #
     # ソリューションリスト管理
     #
-
-    # 実行ステータス
-    _status: dict[ str, int or dict ] = { }
-
-    # ソリューション行 { solution : str, result : str } のリスト、最新 10 個
-    _solutions: list[ dict[ str, str or bool ] ] = [ ]
-    _wait: int = 0
 
     # ソリューションリストの追加処理
     def             _addSolution( self, time : str, sol : str ) -> dict :
