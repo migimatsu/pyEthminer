@@ -16,9 +16,9 @@ from            Miner                       import      Miner
 # Ethminer 実行 - 主処理
 def         pyEthminer( title : str ) -> None :
     """
-    パスワードジェネレータ主処理
+    イーサリウムマイニング GUI 主処理
 
-    ethminer コマンドを利用してマイニングを実行します
+    GUI 経由で ethminer コマンドを利用してマイニングを実行します
 
     :param title:        ウィンドウのタイトル
     """
@@ -32,6 +32,9 @@ def         pyEthminer( title : str ) -> None :
     
     # コマンドの実行インスタンスを作る
     miner           = Miner()
+    
+    # コマンド動作一時停止中
+    paused          = False
 
     # イベントループ
     while True :
@@ -96,13 +99,9 @@ def             _do( screen : str, event : str, _ : dict, miner : Miner ) -> dic
         # 停止完了のチェックをする（停止待ちでないなら何もしない）
         result          |= miner.wait_stop()
 
-    # main・pause - マイニングコマンドを一時停止する
+    # main・pause - マイニングコマンドを一時停止・再開する
     elif screen == 'main' and event == 'pause' :
         result          = miner.pause()
-    
-    # main・resume - マイニングコマンドを再開する
-    elif screen == 'main' and event == 'resume' :
-        result          = miner.resume()
     
     # main・stop - マイニングコマンドを停止する
     elif screen == 'main' and event == 'stop' :

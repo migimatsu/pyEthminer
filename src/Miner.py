@@ -44,6 +44,9 @@ class           Miner :
             [ *Props.props( 'MINER', 'OPTIONS' ).split(), '-P', self._pool ]
         )
 
+        # コマンド一時停止中
+        self._paused : bool                                     = False
+
         # コマンド停止スレッド
         self._stopper : Thread or None                          = None
 
@@ -56,7 +59,7 @@ class           Miner :
         self._solutions : list[ dict[ str, str or bool ] ]      = []
 
         # ソリューション行に対する結果待ち数
-        self._wait : int                                        = 0
+        self._wait : bool                                       = False
 
     #
     # コマンド制御
@@ -82,25 +85,24 @@ class           Miner :
         self._miner         = CommandExecutor( self._cmd, self._opts )
     
         # 画面の更新データを設定する
-        result[ 'start'  ]  = { 'disabled' : True  }
-        result[ 'pause'  ]  = { 'disabled' : False }
-        result[ 'resume' ]  = { 'disabled' : True  }
-        result[ 'stop'   ]  = { 'disabled' : False }
+        result[ 'start' ]   = { 'disabled' : True  }
+        result[ 'pause' ]   = { 'disabled' : False }
+        result[ 'stop'  ]   = { 'disabled' : False }
     
-        result[ 'rate'   ]  = { 'text' : '', 'background_color' : _GREEN }
+        result[ 'rate'  ]   = { 'text' : '', 'background_color' : _GREEN }
 
-        result[ 'pool'   ]  = self._pool
+        result[ 'pool'  ]   = self._pool
         
-        result[ 'msg'    ]  = 'マイニング中です...'
+        result[ 'msg'   ]   = 'マイニング中です...'
         
         # 結果待ち数をリセットする
-        self._wait          = 0
+        self._wait          = False
 
         # 更新データを返す
         return result
 
 
-    # マイニングコマンドの一時停止処理
+    # マイニングコマンドの一時停止・再開処理
     def             pause( self, ) -> dict :
         """
         マイニングコマンドを一時停止する
@@ -110,24 +112,44 @@ class           Miner :
 
         # 結果領域
         result              = {}
-        
+
         # 起動していない時はメッセージを出す
         if not self.isAlive() :
             result[ 'msg' ]     = '!!! コマンドが起動していません'
             return result
 
-        # コマンドを一時停止する
-        self._miner.pause()
+        # 一時停止中の時、再開する
+        if self._paused :
 
-        # 画面の更新データを設定する
-        result[ 'start'  ]  = { 'disabled' : True  }
-        result[ 'pause'  ]  = { 'disabled' : True  }
-        result[ 'resume' ]  = { 'disabled' : False }
-        result[ 'stop'   ]  = { 'disabled' : False }
-        
-        result[ 'rate'   ]  = { 'text' : '', 'background_color' : _YELLOW }
+            # コマンドを再開する
+            self._miner.resume()
 
-        result[ 'msg'    ]  = '一時停止しています...'
+            result[ 'start' ]   = { 'disabled' : True }
+            result[ 'pause' ]   = { 'text' : ' 一時停止 ', 'disabled' : False, }
+            result[ 'stop'  ]   = { 'disabled' : False }
+
+            result[ 'rate'  ]   = { 'text' : '', 'background_color' : _GREEN }
+
+            result[ 'msg'   ]   = 'マイニング中です...'
+            
+            self._paused        = False
+
+        # 実行中の時、一時停止する
+        else :
+            
+            # コマンドを一時停止する
+            self._miner.pause()
+
+            # 画面の更新データを設定する
+            result[ 'start' ]   = { 'disabled' : True  }
+            result[ 'pause' ]   = { 'text' : '  再  開  ', 'disabled' : False }
+            result[ 'stop'  ]   = { 'disabled' : False }
+            
+            result[ 'rate'  ]   = { 'text' : '', 'background_color' : _YELLOW }
+
+            result[ 'msg'   ]   = '一時停止しています...'
+
+            self._paused        = True
         
         return result
 
@@ -148,19 +170,6 @@ class           Miner :
             result[ 'msg' ]     = '!!! コマンドが起動していません'
             return result
 
-        # コマンドを再開する
-        self._miner.resume()
-        
-        result[ 'start'  ]  = { 'disabled' : True  }
-        result[ 'pause'  ]  = { 'disabled' : False }
-        result[ 'resume' ]  = { 'disabled' : True  }
-        result[ 'stop'   ]  = { 'disabled' : False }
-        
-        result[ 'rate'   ]  = { 'text' : '', 'background_color' : _GREEN }
-
-        result[ 'msg'    ]  = 'マイニング中です...'
-        
-        return result
 
 
     # マイニングコマンドの停止処理
@@ -186,16 +195,15 @@ class           Miner :
         self._stopper.start()
 
         # 画面の更新データを設定する
-        result[ 'start'  ]  = { 'disabled' : True }
-        result[ 'pause'  ]  = { 'disabled' : True }
-        result[ 'resume' ]  = { 'disabled' : True }
-        result[ 'stop'   ]  = { 'disabled' : True }
+        result[ 'start' ]   = { 'disabled' : True }
+        result[ 'pause' ]   = { 'disabled' : True }
+        result[ 'stop'  ]   = { 'disabled' : True }
         
-        result[ 'rate'   ]  = { 'text' : '', 'background_color' : _RED }
+        result[ 'rate'  ]   = { 'text' : '', 'background_color' : _RED }
 
-        result[ 'pool'   ]  = ''
+        result[ 'pool'  ]   = ''
 
-        result[ 'msg'    ]  = msg if msg else '' + '停止しています... (しばらくお待ちください)'
+        result[ 'msg'   ]   = msg if msg else '' + '停止しています... (しばらくお待ちください)'
         
         return result
 
@@ -224,11 +232,12 @@ class           Miner :
             self._stopper       = None
             
             # 画面の更新データを設定する
-            result[ 'start'  ]  = { 'disabled' : False }
-            result[ 'pause'  ]  = { 'disabled' : True  }
-            result[ 'resume' ]  = { 'disabled' : True  }
-            result[ 'stop'   ]  = { 'disabled' : True  }
+            result[ 'start' ]   = { 'disabled' : False }
+            result[ 'pause' ]   = { 'disabled' : True  }
+            result[ 'stop'  ]   = { 'disabled' : True  }
 
+            result[ 'rate'  ]   = { 'text' : '', 'background_color' : _RED }
+            
             result[ 'msg' ]     = ''
 
         return result
@@ -263,8 +272,12 @@ class           Miner :
         line                = line.replace( '\n', '' )
         
         # ログ行
-        result[ 'log' ]     = line[ 20 : ]
+        result[ 'log' ]     = line[ 21 : ]
         log.info( line )
+
+        # DEBUG : 結果待ち中はログ
+        if self._wait :
+            print( line )
 
         # 行を単語に分割して解析する
         col                 = line.split()
@@ -275,41 +288,36 @@ class           Miner :
     
         # 'cl' で始まる Solution 行の時 -  Solution のリストに更新する
         if col[ 0 ] == 'cl' and line.find( 'Sol:' ) > 0 :
-            self._wait                  += 1
-            result                      |= self._addSolution( col[ 1 ], col[ 6 ] )
+            self._wait                  = True
+            result                      |= self._addSolution( col[ 1 ], col[ 4 ][ : -1 ], col[ 6 ] )
             print( line )
 
         # 'i' で始まる Job 行の時 - Job 行を更新する
         elif col[ 0 ] == 'i' and line.find( 'Job:' ) > 0 :
             self._status[ 'job' ]       += 1
-            result[ 'job' ]             = '{:010} : {} : {}'.format( self._status[ 'job' ], col[ 1 ], col[ 3 ], )
+            result[ 'job' ]             = '{:010} : {} : {}'.format( self._status[ 'job' ], col[ 1 ], col[ 3 ][ : -1 ], )
     
         # 'i' で始まる Accepted 行の時 - Solution のリストを ACCEPT で更新する
         elif col[ 0 ] == 'i' and '**Accepted' in line and self._wait :
         
             # Accept 数を更新する　
             self._status[ 'accept' ]    += 1
-            self._wait                  -= 1
+            self._wait                  = False
             result[ 'accept' ]          = '{:010}'.format( self._status[ 'accept' ], )
         
             # Solution のリストに加えて更新する
             result                      |= self._updateSolution( col[ 1 ], True )
-            print( line )
 
-        # 'X' で始まる Rejected / No response 行の時 - Solution のリストを REJECT で更新する
-        elif col[ 0 ] == 'X' :
+        # 'X' で始まる行を結果待ち中に受ければリジェクト
+        elif col[ 0 ] == 'X' and self._wait :
 
-            if ( '**Rejected' in line or 'No response' in line ) and self._wait :
-        
-                # Reject 数を更新する　
-                self._status[ 'reject' ]    += 1
-                self._wait                  -= 1
-                result[ 'reject' ]          = '{:010}'.format( self._status[ 'reject' ], )
+            # Reject 数を更新する　
+            self._status[ 'reject' ]    += 1
+            self._wait                  = False
+            result[ 'reject' ]          = '{:010}'.format( self._status[ 'reject' ], )
 
-                # Solution のリストに加えて更新する
-                result                      |= self._updateSolution( col[ 1 ], False )
-
-            print( line )
+            # Solution のリストに加えて更新する
+            result                      |= self._updateSolution( col[ 1 ], False )
 
         # ' m' で始まるハッシュレートの時 - ハッシュレートを更新する
         elif col[ 0 ] == 'm' :
@@ -363,18 +371,23 @@ class           Miner :
     #
 
     # ソリューションリストの追加処理
-    def             _addSolution( self, time : str, sol : str ) -> dict :
+    def             _addSolution( self, time : str, job : str, sol : str ) -> dict :
         """
-        ソリューションリストに新しいデータを追加する
+        ソリューションリスト先頭に新しいデータを追加する
 
         :param time:    計算時間
         :param sol:     ソリューション値
         :return:        更新データ
         """
 
-        # ソリューションをリスト先頭に設定する
-        self._solutions.insert( 0, { 'time' : time, 'solution' : sol, } )
+        # すでに同じ job があれば何もしない
+        for s in self._solutions :
+            if s[ 'job' ] == job :
+                return {}
 
+        # ソリューションをリスト先頭に設定する
+        self._solutions.insert( 0, { 'time' : time, 'job' : job, 'solution' : sol, } )
+ 
         # ソリューションのリストが 10 を超えている時はリスト末尾の Solution 行は削除する
         if len( self._solutions ) > 10 :
             self._solutions.pop()
@@ -385,7 +398,7 @@ class           Miner :
     # ソリューションリストの追加処理
     def             _updateSolution( self, time : str, result : bool ) -> dict :
         """
-        ソリューションリストに新しいデータを追加する
+        ソリューションリスト先頭に結果を付加する
 
         :param time:    計算時間
         :param result:  True : 'ACCEPT' | False : 'REJECT'
@@ -393,14 +406,9 @@ class           Miner :
         """
 
         # ソリューションリストのもっとも古い、まだ result のない行に結果をつける
-        for i in range( len( self._solutions ) - 1, -1, -1 ) :
-            
-            # result のない行を見つける
-            if not 'result' in self._solutions[ i ] :
-                self._solutions[ i ][ 'time' ]          = time
-                self._solutions[ i ][ 'result' ]        = result
-                break
-                
+        self._solutions[ 0 ][ 'time' ]          = time
+        self._solutions[ 0 ][ 'result' ]        = result
+        
         # 更新した内容で更新する
         return self._getSolutionList()
         
@@ -408,7 +416,7 @@ class           Miner :
     # ソリューションリストの更新データへの変換処理　
     def             _getSolutionList( self, ) -> dict :
         """
-        ソリューションリストを更新データに変換する
+        ソリューションリスト全体を更新データに変換する
 
         :return:        更新データ
         """
@@ -424,7 +432,7 @@ class           Miner :
             
             # ソリューション行のデータをリストの行（文字列）にする
             line            = {
-                'text' : '{} : Solution = {}'.format( item[ 'time' ], item[ 'solution' ] ),
+                'text' : '{} : {} = {}'.format( item[ 'time' ], item[ 'job' ], item[ 'solution' ] ),
                 'background_color' : None,
             }
 

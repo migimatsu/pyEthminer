@@ -39,16 +39,15 @@ _YELLOW             = '#A87B00'
 # 部分レイアウト - 制御ボタン
 _MINER_BUTTON       = [
     [
-        S.Button( '開始', key = 'start', disabled = False, disabled_button_color = _DISABLE, ),
-        S.Button( '一時停止', key = 'pause', disabled = True, disabled_button_color = _DISABLE, ),
-        S.Button( '再開', key = 'resume', disabled = True, disabled_button_color = _DISABLE, ),
-        S.Button( '停止', key = 'stop', disabled = True, disabled_button_color = _DISABLE, ),
+        S.Button( '  開  始  ', key = 'start', disabled = False, disabled_button_color = _DISABLE, ),
+        S.Button( ' 一時停止 ', key = 'pause', disabled = True, disabled_button_color = _DISABLE, ),
+        S.Button( '  停  止  ', key = 'stop', disabled = True, disabled_button_color = _DISABLE, ),
     ],
 ]
 
 _WINDOW_BUTTON      = [
     [
-        S.Button( '閉じる', key = 'close', disabled = False, ),
+        S.Button( ' 閉 じ る ', key = 'close', disabled = False, ),
     ]
 ]
 
@@ -95,7 +94,7 @@ _LAYOUT             = {
             ],
             # 制御ボタン
             [
-                S.Text( '', size = ( 30, 1 ) ),
+                S.Text( '', size = ( 25, 1 ) ),
                 S.Frame( ' マイニング ', _MINER_BUTTON, title_location = S.TITLE_LOCATION_LEFT ),
                 S.Frame( ' ウィンドウ ', _WINDOW_BUTTON, title_location = S.TITLE_LOCATION_LEFT ),
             ]
