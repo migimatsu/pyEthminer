@@ -33,9 +33,6 @@ def         pyEthminer( title : str ) -> None :
     # コマンドの実行インスタンスを作る
     miner           = Miner()
     
-    # コマンド動作一時停止中
-    paused          = False
-
     # イベントループ
     while True :
 
@@ -88,17 +85,17 @@ def             _do( screen : str, event : str, _ : dict, miner : Miner ) -> dic
     # アクションの結果領域
     result          = {}
     
-    # main・start - マイニングコマンドを開始する
-    if screen == 'main' and event == 'start' :
-        result          = miner.start()
-    
-    # main・_ - 画面イベントタイムアウト
-    elif screen == 'main' and event == '_' :
+    # main・_ - 画面イベントタイムアウト - コマンドから出力があれば読む
+    if screen == 'main' and event == '_' :
         result          = miner.status()
 
-        # 停止完了のチェックをする（停止待ちでないなら何もしない）
+        # 停止完了のチェックをする（停止待ちでないなら何もしないで戻る）
         result          |= miner.wait_stop()
 
+    # main・start - マイニングコマンドを開始する
+    elif screen == 'main' and event == 'start' :
+        result          = miner.start()
+    
     # main・pause - マイニングコマンドを一時停止・再開する
     elif screen == 'main' and event == 'pause' :
         result          = miner.pause()
@@ -178,7 +175,8 @@ def             _closing( win: S.Window, miner: Miner ) -> None :
 if __name__ == '__main__':
     
     # ロガーのセットアップ
-    SetupLog( DEBUG )
+    _debug          = False
+    SetupLog( DEBUG if _debug else INFO )
     
     # ロガーのセットアップ
     Props.setup()

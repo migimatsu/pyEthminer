@@ -8,10 +8,10 @@ Layout.py
 # インポート
 import          copy
 
-from            common.Log          import      abort
+import          PySimpleGUI         as          S
 from            typing              import      List
 
-import          PySimpleGUI         as          S
+from            common.Log          import      abort, DEBUG
 
 #
 # デザインテーマの設定をする - レイアウトの定義より前にテーマを設定すること
@@ -61,7 +61,8 @@ _LAYOUT             = {
             # 接続先プール
             [
                 S.Text( 'プール', size = ( 20, 1 ), justification = 'right', ),
-                S.Text( '', key = 'pool', size = ( 100, 1 ), justification  = 'center', ), ],
+                S.Text( '', key = 'pool', size = ( 100, 1 ), justification  = 'center', ),
+            ],
             # 状況
             [
                 S.Text( 'ハッシュレート', size = ( 20, 1 ), justification  = 'right', ),
@@ -89,9 +90,9 @@ _LAYOUT             = {
                 S.Text( '', key = 'msg', size = ( 132, 1 ), justification = 'center', ),
             ],
             # ログ表示 - デバッグ用
-            [
-                S.Output( size = ( 132, 10 ), ),
-            ],
+            # [
+            #     S.Output( size = ( 132, 10 ), ),
+            # ],
             # 制御ボタン
             [
                 S.Text( '', size = ( 25, 1 ) ),
